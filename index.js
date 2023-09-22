@@ -7,9 +7,23 @@ const movies = [
     {id:3, title: 'Brazil', year: 1985, rating: 8 },
     {id:4, title: 'الإرهاب والكباب', year: 1992, rating: 6.2 }
 ]
+let length=movies.length-1;
+console.log();
 
 
+app.use("/movies/add",(req,res,next)=>{
+    let title=req.query.title;
+    let year=req.query.year;
+    let rating=req.query.rating ?? 4;
 
+    if( title && year && (year.toString().length >= 4) && (typeof +year ==="number") ){
+        movies.push({id:++length,title:title, year:year, rating:rating});
+        res.redirect("/movies/get");
+    }else{
+        res.status(403).send(`{status:${res.statusCode}, error:true, message:'you cannot create a movie without providing a title and a year'}`)
+
+    }
+})
 app.use("/movies/get/id/:id", (req,res,next)=>{
     let id= req.params.id;
     let moviesList=[];
