@@ -2,12 +2,25 @@ import express from "express";
 
 const app = express();
 const movies = [
-    { title: 'Jaws', year: 1975, rating: 8 },
-    { title: 'Avatar', year: 2009, rating: 7.8 },
-    { title: 'Brazil', year: 1985, rating: 8 },
-    { title: 'الإرهاب والكباب', year: 1992, rating: 6.2 }
+    {id:1, title: 'Jaws', year: 1975, rating: 8 },
+    {id:2, title: 'Avatar', year: 2009, rating: 7.8 },
+    {id:3, title: 'Brazil', year: 1985, rating: 8 },
+    {id:4, title: 'الإرهاب والكباب', year: 1992, rating: 6.2 }
 ]
 
+
+
+app.use("/movies/get/id/:id", (req,res,next)=>{
+    let id= req.params.id;
+    let moviesList=[];
+    if(id && id<=movies.length){
+        moviesList=movies.map(e=>{return ` title: ${e.title}, year: ${e.year}, rating: ${e.rating}||`});
+        res.status(200).send(`{status: ${res.statusCode}, data: ${moviesList.at(+id-1)}}`)
+    }else{
+        res.status(404).send(`{status: ${res.statusCode}, error:true, message: 'the movie ${id} does not exist}`);
+        console.log(res);
+    }
+})
 app.use("/movies/get/:sort", (req,res,next) =>{
     let sort=req.params.sort;
     let moviesList=[];
