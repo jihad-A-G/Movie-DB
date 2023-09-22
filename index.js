@@ -8,6 +8,29 @@ const movies = [
     { title: 'الإرهاب والكباب', year: 1992, rating: 6.2 }
 ]
 
+app.use("/movies/get/:sort", (req,res,next) =>{
+    let sort=req.params.sort;
+    let moviesList=[];
+    if(sort ==="by-date"){
+        moviesList=movies
+        .sort((a,b)=>{return a.year-b.year});
+    }else if(sort ==="by-rating"){
+        moviesList=movies
+        .sort((a,b)=>{return b.rating-a.rating})
+    } else if(sort ==="by-title"){
+        moviesList=movies
+        .sort((a,b)=>{
+            if(a.title < b.title) return -1;
+            if(a.title > b.title) return 1;
+            return 0;
+        })
+
+    }
+
+    res.status(200).send(`{status:${res.statusCode}, data: ${moviesList.map(e=>{return ` title: ${e.title}, year: ${e.year}, rating: ${e.rating}||`})}}`)
+})
+
+
 app.use("/movies/get",(req,res,next) =>{
     res.status(200).send(`{status:${res.statusCode}, data: ${movies.map(e=>{return ` title: ${e.title}, year: ${e.year}, rating: ${e.rating}||`})}}`)
 })
