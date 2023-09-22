@@ -9,6 +9,7 @@ const movies = [
 ]
 let length=movies.length-1;
 
+
 app.use("/movies/add",(req,res,next)=>{
     let title=req.query.title;
     let year=req.query.year;
@@ -30,6 +31,22 @@ app.use("/movies/delete/:id",(req,res,next) =>{
     }else{
         res.status(404).send(`{status:${res.statusCode}, error:true, message:'the movie <ID> does not exist'}`)
     }
+})
+app.use("/movies/update/:id",(req,res,next) =>{
+    const title=req.query.title;
+    const year=req.query.year;
+    const rating=req.query.rating;
+    const id=req.params.id;
+    if(title){
+        movies[+id-1].title=title;
+    }
+    if(year){
+        movies[+id-1].year=year;
+    }
+    if(rating){
+        movies[+id-1].rating=rating;
+    }
+    res.redirect("/movies/get");
 })
 app.use("/movies/get/id/:id", (req,res,next)=>{
     let id= req.params.id;
