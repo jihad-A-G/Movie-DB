@@ -1,86 +1,132 @@
 import express from "express";
 
-const app = express();
-const movies = [
-    { title: 'Jaws', year: 1975, rating: 8 },
-    { title: 'Avatar', year: 2009, rating: 7.8 },
-    { title: 'Brazil', year: 1985, rating: 8 },
-    { title: 'الإرهاب والكباب', year: 1992, rating: 6.2 }
-]
+import mongoose from "mongoose";
 
-app.get("/movies/add",(req,res,next)=>{
+const app = express();
+
+const moviesSchema= new mongoose.Schema({
+    _id:Number,
+    title:String,
+    year:Number,
+    rating:Number
+});
+
+const Movies=mongoose.model("movies",moviesSchema);
+
+//Get the count of movies documents to increment it on every insert operation. 
+
+let count=0;
+app.use("",async (req,res,next)=>{
+count=await Movies.count({});
+next();
+})
+
+//Insert a movie to the database
+
+app.get("/movies/add",async (req,res,next)=>{
     let title=req.query.title;
     let year=req.query.year;
     let rating=req.query.rating ?? 4;
+    try {
+        if (title && year && (year.toString().length >= 4) && (typeof +year ==="number") ){
+        
+            const movie=new Movies({
+                _id:++count,
+                title:title,
+                year:year,
+                rating:rating
+            })
 
-    if( title && year && (year.toString().length >= 4) && (typeof +year ==="number") ){
-        movies.push({title:title, year:+year, rating:+rating});
-        res.redirect("/movies/get");
-    }else{
+            await movie.save();
+    
+            res.redirect("/movies/get");
+        }else{
         res.status(403).send({status:res.statusCode, error:true, message:'you cannot create a movie without providing a title and a year'})
-
+        }
+        
+    } catch (err) {
+        console.log(err);
     }
+  
 })
-app.get("/movies/delete/:id",(req,res,next) =>{
+//Delete a movie from database, based on the given id.
+
+app.get("/movies/delete/:id",async (req,res,next) =>{
     const id=req.params.id;
-    if(+id <=movies.length){
-        movies.splice(+id-1,1);
+    try{
+        
+        await Movies.findByIdAndDelete(id);        
         res.redirect("/movies/get");
-    }else{
+
+    }catch(err){
+        console.log(err);
         res.status(404).send({status:res.statusCode, error:true, message:`the movie ${id} does not exist`})
     }
+    
 })
-app.get("/movies/update/:id",(req,res,next) =>{
+
+//Update a movie in database, base on the given id and new values.
+
+app.get("/movies/update/:id",async (req,res,next) =>{
     const title=req.query.title;
     const year=req.query.year;
     const rating=req.query.rating;
     const id=req.params.id;
+    const movie= await Movies.findById(id);
     if(title){
-        movies[+id-1].title=title;
+        movie.title=title;
     }
     if(year){
-        movies[+id-1].year=+year;
+        movie.year=+year;
     }
     if(rating){
-        movies[+id-1].rating=+rating;
+        movie.rating=+rating;
     }
+    await movie.save();
     res.redirect("/movies/get");
 })
-app.get("/movies/get/id/:id", (req,res,next)=>{
+
+//Fetch one movie from the database based on th given id.
+
+app.get("/movies/get/id/:id",async (req,res,next)=>{
     let id= req.params.id;
-    if(id && id<=movies.length){
-        res.status(200).send({status: res.statusCode, data:movies.at(+id-1)})
-    }else{
+    try{
+        const movie=await Movies.findById(id);
+
+            res.status(200).send({status: res.statusCode, data:movie})
+
+    }catch(err){
         res.status(404).send({status: res.statusCode, error:true, message: `the movie ${id} does not exist`});
-        console.log(res);
     }
+   
 })
-app.get("/movies/get/:sort", (req,res,next) =>{
+
+//fetch and sort all movies based on the given field.
+
+app.get("/movies/get/:sort",async (req,res,next) =>{
     let sort=req.params.sort;
-    let moviesList=[];
-    if(sort ==="by-date"){
-        moviesList=movies
-        .sort((a,b)=>{return a.year-b.year});
+    let moviesList; 
+    if(sort ==="by-date"){  
+        moviesList= await Movies.find().sort({year:'asc'});
     }else if(sort ==="by-rating"){
-        moviesList=movies
-        .sort((a,b)=>{return b.rating-a.rating})
+        moviesList= await Movies.find().sort({rating:"desc"});
     } else if(sort ==="by-title"){
-        moviesList=movies
-        .sort((a,b)=>{
-            if(a.title < b.title) return -1;
-            if(a.title > b.title) return 1;
-            return 0;
-        })
+        moviesList= await Movies.find().sort({title:'asc'});
 
     }
-
     res.status(200).send({status:res.statusCode, data:moviesList })
 })
 
+//Fetch all movies from the movies collection.
 
-app.get("/movies/get",(req,res,next) =>{
+app.get("/movies/get",async (req,res,next) =>{
+    try{
+    const movies=await Movies.find();
 
     res.status(200).send({status:res.statusCode,movies:movies})
+    }catch(err){
+        console.log(err);
+    }
 })
 
 app.get("/hello/:id",(req,res,next) =>{
@@ -119,8 +165,7 @@ app.get("/",(req,res,next)=>{
 
 
 
-
-
+mongoose.connect("mongodb+srv://jihadabdlghani:movieDB@cluster0.bmrdvwh.mongodb.net/");
 app.listen(3000,(err)=>{
     if(err){
         console.error(err);
